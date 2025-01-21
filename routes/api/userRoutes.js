@@ -18,7 +18,7 @@ router.post("/changePassword", userController.changePassword);
 
 // protected routes
 router.use(verifyJWT);
-router.post("/activate", userController.activateAccount);
+// router.post("/activate", userController.activateAccount);
 router.post("/sendVerification", userController.sendVerificationEmail);
 router.get("/logout", userController.logout);
 router.post("/coverImages", uploadController.getListImages);

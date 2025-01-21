@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import chalk from 'chalk';
 
 // Farben definieren
-const DB = chalk.bgWhite.red;
 const b = chalk.bgRed.white;
 
 const connectDB =async () =>{

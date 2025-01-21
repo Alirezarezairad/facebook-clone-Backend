@@ -43,38 +43,38 @@ class UserController {
   }
 
   //verify account with token
-  async activateAccount(req, res) {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ message: "token not valid" });
+  // async activateAccount(req, res) {
+  //   const { token } = req.body;
+  //   if (!token) return res.status(400).json({ message: "token not valid" });
 
-    const user = jwt.verify(
-      token,
-      process.env.MAIL_JWT_TOKEN,
+  //   const user = jwt.verify(
+  //     token,
+  //     process.env.MAIL_JWT_TOKEN,
 
-      async (err, user) => {
-        if (err) {
-          return res.status(400).json({ message: "Invalid token" });
-        }
-        const foundUser = await UserModel.findById(user.id);
-        if (!foundUser)
-          return res.status(400).json({ message: "Invalid token" });
+  //     async (err, user) => {
+  //       if (err) {
+  //         return res.status(400).json({ message: "Invalid token" });
+  //       }
+  //       const foundUser = await UserModel.findById(user.id);
+  //       if (!foundUser)
+  //         return res.status(400).json({ message: "Invalid token" });
 
-        if (foundUser.id !== req.userId)
-          return res.status(403).json({ message: "invalid token" });
+  //       if (foundUser.id !== req.userId)
+  //         return res.status(403).json({ message: "invalid token" });
 
-        if (foundUser.verified == true) {
-          return res
-            .status(400)
-            .json({ message: "this email is already activated" });
-        } else {
-          await UserModel.findByIdAndUpdate(user.id, { verified: true });
-          return res
-            .status(200)
-            .json({ message: "Account has been activated successfully" });
-        }
-      }
-    );
-  }
+  //       if (foundUser.verified == true) {
+  //         return res
+  //           .status(400)
+  //           .json({ message: "this email is already activated" });
+  //       } else {
+  //         await UserModel.findByIdAndUpdate(user.id, { verified: true });
+  //         return res
+  //           .status(200)
+  //           .json({ message: "Account has been activated successfully" });
+  //       }
+  //     }
+  //   );
+  // }
 
   //authenticate and login user
   async auth(req, res) {
@@ -296,26 +296,30 @@ class UserController {
   async sendResetPasswordCode(req, res) {
     try {
       const { email } = req.body;
-      if (!email)
+      if (!email) {
         return res.status(400).json({ message: "Invalid email address" });
+      }
+  
       const user = await UserModel.findOne({ email }).select("-password");
-      if (!user)
-        return res.status(400).json({ message: "Account does not exists" });
-      await CodeModel.findOneAndRemove({ user: user.id });
+      if (!user) {
+        return res.status(400).json({ message: "Account does not exist" });
+      }
+  
+      // حذف کدهای قبلی
+      await CodeModel.deleteOne({ user: user.id });  
+  
       const code = randomstring.generate(5);
-      await new CodeModel({
-        code,
-        user: user.id,
-      }).save();
+      await new CodeModel({ code, user: user.id }).save();
+  
       sendResetPasswordCode(user.email, user.first_name, code);
-      res
-        .status(200)
-        .json({ message: "Email reset code has been sent to your email" });
+      
+      res.status(200).json({ message: "Email reset code has been sent to your email" });
     } catch (error) {
+      console.error('Error sending reset password code:', error);
       res.status(500).json({ message: error.message });
     }
   }
-
+  
   // validate reset code
   async validateResetCode(req, res) {
     try {
@@ -340,28 +344,30 @@ class UserController {
   async changePassword(req, res) {
     const { email, password, code } = req.body;
     if (!email || !password || !code)
-      return res
-        .status(400)
-        .json({ message: "Eamil, Password or Code can not be empty" });
-
+      return res.status(400).json({ message: "Email, Password or Code cannot be empty" });
+  
     try {
       const user = await UserModel.findOne({ email });
       if (!user) return res.status(400).json({ message: "User not found" });
+  
       const dbCode = await CodeModel.findOne({ user: user.id });
-      if (dbCode.code !== code)
-        return res
-          .status(400)
-          .json({ message: "Verification code is wrong..." });
-
+      if (!dbCode || dbCode.code !== code) {
+        return res.status(400).json({ message: "Verification code is wrong..." });
+      }
+  
       user.password = password;
       await user.save();
-      await dbCode.remove();
-
-      res.status(200).json({ message: "OK" });
+  
+      // حذف کد اعتبارسنجی پس از تغییر رمز عبور
+      await CodeModel.deleteOne({ user: user.id });
+  
+      res.status(200).json({ message: "Password changed successfully" });
     } catch (error) {
+      console.error('Error changing password:', error);
       res.status(500).json({ message: error.message });
     }
   }
+  
 
   async getProfile(req, res) {
     try {

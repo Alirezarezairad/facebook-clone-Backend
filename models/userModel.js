@@ -66,10 +66,10 @@ const userSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
-    verified: {
-      type: Boolean,
-      default: false,
-    },
+    // verified: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     friends: {
       type: Array,
       default: [],
